@@ -425,79 +425,133 @@ WEOF
 
 wings_config_wizard() {
     local node_uuid="" token_id="" token_key="" api_port="" panel_url=""
+
+    # ── mask token key ──────────────────────────────────────
     _mask() { printf '%*s' "${#1}" '' | tr ' ' '*'; }
 
+    # ── Wizard header (matches image exactly) ───────────────
     _wiz_hdr() {
-        _wings_header
-        echo -e "   ${BRIGHT_MAGENTA}${BD}CONFIGURATION WIZARD${NC}"
-        echo -e "   ${DIM}Enter credentials. Type ${WHITE}'back'${DIM} to go to previous step.${NC}"
+        clear
+        echo ""
+        # System info panel
+        local hn ip ds dc
+        hn=$(hostname 2>/dev/null || echo "unknown")
+        ip=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "N/A")
+        if systemctl is-active --quiet wings 2>/dev/null; then
+            ds="${CHECKMARK} ONLINE";  dc="${BRIGHT_GREEN}${BD}"
+        else
+            ds="${CROSSMARK} OFFLINE"; dc="${BRIGHT_RED}${BD}"
+        fi
+
+        echo -e "  ${BRIGHT_YELLOW}${BD}⚡ WINGS CONFIGURATOR${NC} ${DARK_GRAY}::${NC} ${BRIGHT_CYAN}v4.5${NC}"
+        echo -e "  ${BRIGHT_CYAN}├── SYSTEM INFORMATION${NC}"
+        echo -e "  ${WHITE}│   ├── Hostname : ${BRIGHT_CYAN}${hn}${NC}"
+        echo -e "  ${WHITE}│   └── IP Addr  : ${BRIGHT_CYAN}${ip}${NC}"
+        echo -e "  ${BRIGHT_CYAN}├── SERVICE STATUS${NC}"
+        echo -e "  ${WHITE}│   └── Daemon   : ${dc}${ds}${NC}"
+        echo -e "  ${DARK_GRAY}└─────────────────────────────────────────────────────${NC}"
+        echo ""
+        echo -e "  ${WHITE}${BD}CONFIGURATION WIZARD${NC}"
+        echo -e "  ${DIM}Enter credentials. Type ${WHITE}${BD}'back'${NC}${DIM} to go to previous step.${NC}"
+        echo ""
+        echo -e "  ${DARK_GRAY}─────────────────────────────────────────────────────${NC}"
         echo ""
     }
 
+    # ── STEP 1: Node UUID ───────────────────────────────────
     step1() {
         while true; do
             _wiz_hdr
-            printf "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Node UUID: ${NC}"; read -r node_uuid
+            printf "  ${BRIGHT_GREEN}►${NC}${WHITE}Node UUID: ${NC}"; read -r node_uuid
             [[ "$node_uuid" == "back" ]] && { node_uuid=""; return 1; }
-            [[ -z "$node_uuid" ]] && { print_error "UUID cannot be empty."; sleep 1; continue; }
+            [[ -z "$node_uuid" ]] && {
+                echo -e "  ${BRIGHT_RED}  ${CROSSMARK} UUID cannot be empty.${NC}"; sleep 1; continue
+            }
             return 0
         done
     }
 
+    # ── STEP 2: Token ID ────────────────────────────────────
     step2() {
         while true; do
             _wiz_hdr
-            echo -e "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Node UUID: ${BRIGHT_CYAN}${node_uuid}${NC}"; echo ""
-            printf "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Token ID: ${NC}"; read -r token_id
+            echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Node UUID: ${BRIGHT_CYAN}${node_uuid}${NC}"
+            echo ""
+            printf "  ${BRIGHT_GREEN}►${NC}${WHITE}Token ID: ${NC}"; read -r token_id
             [[ "$token_id" == "back" ]] && { token_id=""; return 1; }
-            [[ -z "$token_id" ]] && { print_error "Token ID cannot be empty."; sleep 1; continue; }
+            [[ -z "$token_id" ]] && {
+                echo -e "  ${BRIGHT_RED}  ${CROSSMARK} Token ID cannot be empty.${NC}"; sleep 1; continue
+            }
             return 0
         done
     }
 
+    # ── STEP 3: Token Key ───────────────────────────────────
     step3() {
         while true; do
             _wiz_hdr
-            echo -e "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Node UUID: ${BRIGHT_CYAN}${node_uuid}${NC}"
-            echo -e "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Token ID : ${BRIGHT_CYAN}${token_id}${NC}"; echo ""
-            printf "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Token Key: ${NC}"; read -r token_key
+            echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Node UUID: ${BRIGHT_CYAN}${node_uuid}${NC}"
+            echo ""
+            echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Token ID: ${BRIGHT_CYAN}${token_id}${NC}"
+            echo ""
+            printf "  ${BRIGHT_GREEN}►${NC}${WHITE}Token Key: ${NC}"; read -r token_key
             [[ "$token_key" == "back" ]] && { token_key=""; return 1; }
-            [[ -z "$token_key" ]] && { print_error "Token Key cannot be empty."; sleep 1; continue; }
+            [[ -z "$token_key" ]] && {
+                echo -e "  ${BRIGHT_RED}  ${CROSSMARK} Token Key cannot be empty.${NC}"; sleep 1; continue
+            }
             return 0
         done
     }
 
+    # ── STEP 4: API Port ────────────────────────────────────
     step4() {
         while true; do
             _wiz_hdr
-            echo -e "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Node UUID: ${BRIGHT_CYAN}${node_uuid}${NC}"
-            echo -e "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Token ID : ${BRIGHT_CYAN}${token_id}${NC}"
-            echo -e "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Token Key: ${BRIGHT_CYAN}$(_mask "$token_key")${NC}"; echo ""
-            echo -e "   ${DIM}(Default: 8080) Press ENTER to use default${NC}"
-            printf "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}API Port: ${NC}"; read -r api_port
+            echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Node UUID: ${BRIGHT_CYAN}${node_uuid}${NC}"
+            echo ""
+            echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Token ID: ${BRIGHT_CYAN}${token_id}${NC}"
+            echo ""
+            echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Token Key: ${BRIGHT_CYAN}$(_mask "$token_key")${NC}"
+            echo ""
+            echo -e "  ${DIM}(Default: 8080) ENTER${NC}"
+            printf "  ${BRIGHT_GREEN}►${NC}${WHITE}API Port: ${NC}"; read -r api_port
             [[ "$api_port" == "back" ]] && { api_port=""; return 1; }
             [[ -z "$api_port" ]] && api_port="8080"
-            echo -e "   ${BRIGHT_YELLOW}  ⚠ Using Port: ${api_port}${NC}"; sleep 0.4
+            echo -e "  ${BRIGHT_YELLOW}⚠Using Port: ${api_port}${NC}"
+            sleep 0.5
             return 0
         done
     }
 
+    # ── STEP 5: Panel URL ───────────────────────────────────
     step5() {
         while true; do
             _wiz_hdr
-            echo -e "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Node UUID: ${BRIGHT_CYAN}${node_uuid}${NC}"
-            echo -e "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Token ID : ${BRIGHT_CYAN}${token_id}${NC}"
-            echo -e "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Token Key: ${BRIGHT_CYAN}$(_mask "$token_key")${NC}"
-            echo -e "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}API Port : ${BRIGHT_CYAN}${api_port}${NC}"; echo ""
-            echo -e "   ${DIM}(Default: https://panel.example.com) Press ENTER to use default${NC}"
-            printf "   ${BRIGHT_GREEN}${ARROW}${NC} ${WHITE}Panel URL: ${NC}"; read -r panel_url
+            echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Node UUID: ${BRIGHT_CYAN}${node_uuid}${NC}"
+            echo ""
+            echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Token ID: ${BRIGHT_CYAN}${token_id}${NC}"
+            echo ""
+            echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Token Key: ${BRIGHT_CYAN}$(_mask "$token_key")${NC}"
+            echo ""
+            echo -e "  ${DIM}(Default: 8080) ENTER${NC}"
+            echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}API Port: ${BRIGHT_CYAN}${api_port}${NC}"
+            echo -e "  ${BRIGHT_YELLOW}⚠Using Port: ${api_port}${NC}"
+            echo ""
+            echo -e "  ${DIM}(Default: https://panel.example.com)${NC}"
+            printf "  ${BRIGHT_GREEN}►${NC}${WHITE}Panel URL: ${NC}"; read -r panel_url
             [[ "$panel_url" == "back" ]] && { panel_url=""; return 1; }
-            [[ -z "$panel_url" ]] && panel_url="https://panel.example.com"
-            echo -e "   ${BRIGHT_YELLOW}  ⚠ Using URL: ${panel_url}${NC}"; sleep 0.4
+            if [[ -z "$panel_url" ]]; then
+                panel_url="https://panel.example.com"
+                echo -e "  ${BRIGHT_YELLOW}⚠Using Default URL.${NC}"
+            else
+                echo -e "  ${BRIGHT_YELLOW}⚠Using URL: ${panel_url}${NC}"
+            fi
+            sleep 0.5
             return 0
         done
     }
 
+    # ── Wizard navigation loop ──────────────────────────────
     local current_step=1
     while true; do
         case $current_step in
@@ -509,26 +563,49 @@ wings_config_wizard() {
         esac
     done
 
-    # Review
+    # ── REVIEW SETTINGS (matches image exactly) ─────────────
     _wiz_hdr
-    echo -e "   ${BRIGHT_CYAN}${BD}REVIEW SETTINGS:${NC}"
-    print_divider
-    echo -e "   ${WHITE}  ${DOT}  UUID      : ${BRIGHT_CYAN}${node_uuid}${NC}"
-    echo -e "   ${WHITE}  ${DOT}  Token ID  : ${BRIGHT_CYAN}${token_id}${NC}"
-    echo -e "   ${WHITE}  ${DOT}  Token Key : ${BRIGHT_CYAN}$(_mask "$token_key")${NC}"
-    echo -e "   ${WHITE}  ${DOT}  API Port  : ${BRIGHT_CYAN}${api_port}${NC}"
-    echo -e "   ${WHITE}  ${DOT}  Remote    : ${BRIGHT_CYAN}${panel_url}${NC}"
-    print_divider; echo ""
-    printf "   ${WHITE}Apply Configuration? (Y/n/back): ${NC}"; read -r apply
+    echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Node UUID: ${BRIGHT_CYAN}${node_uuid}${NC}"
+    echo ""
+    echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Token ID: ${BRIGHT_CYAN}${token_id}${NC}"
+    echo ""
+    echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Token Key: ${BRIGHT_CYAN}$(_mask "$token_key")${NC}"
+    echo ""
+    echo -e "  ${DIM}(Default: 8080) ENTER${NC}"
+    echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}API Port: ${BRIGHT_CYAN}${api_port}${NC}"
+    echo -e "  ${BRIGHT_YELLOW}⚠Using Port: ${api_port}${NC}"
+    echo ""
+    echo -e "  ${DIM}(Default: https://panel.example.com)${NC}"
+    echo -e "  ${BRIGHT_GREEN}►${NC}${WHITE}Panel URL: ${BRIGHT_CYAN}${panel_url}${NC}"
+    echo -e "  ${BRIGHT_YELLOW}⚠Using Default URL.${NC}"
+    echo ""
+    echo -e "  ${DARK_GRAY}─────────────────────────────────────────────────────${NC}"
+    echo ""
+    echo -e "  ${BRIGHT_CYAN}${BD}REVIEW SETTINGS:${NC}"
+    echo -e "  ${DARK_GRAY}─────────────────────────────────────────────────────${NC}"
+    echo ""
+    echo -e "  ${WHITE}${DOT} UUID      : ${BRIGHT_CYAN}${node_uuid}${NC}"
+    echo -e "  ${WHITE}${DOT} Token ID  : ${BRIGHT_CYAN}${token_id}${NC}"
+    echo -e "  ${WHITE}${DOT} Token Key : ${BRIGHT_CYAN}$(_mask "$token_key")${NC}"
+    echo -e "  ${WHITE}${DOT} API Port  : ${BRIGHT_CYAN}${api_port}${NC}"
+    echo -e "  ${WHITE}${DOT} Remote    : ${BRIGHT_CYAN}${panel_url}${NC}"
+    echo ""
+    echo -e "  ${DARK_GRAY}─────────────────────────────────────────────────────${NC}"
+    echo ""
+    printf "  ${WHITE}Apply Configuration? (Y/n/back): ${NC}"; read -r apply
 
     case "${apply,,}" in
         "back") wings_config_wizard; return ;;
-        "n"|"no") echo -e "\n   ${BRIGHT_YELLOW}  Cancelled.${NC}"; pause; return ;;
+        "n"|"no")
+            echo -e "\n  ${BRIGHT_YELLOW}  Cancelled. No changes written.${NC}"
+            pause; return ;;
     esac
 
-    # Write config
-    _wiz_hdr; print_header "APPLYING CONFIGURATION"
+    # ── Write config.yml & start Wings ─────────────────────
+    _wiz_hdr
+    print_header "APPLYING CONFIGURATION"
     mkdir -p /etc/pterodactyl
+
     print_status "Writing /etc/pterodactyl/config.yml"
     cat > /etc/pterodactyl/config.yml <<CONFEOF
 debug: false
@@ -549,7 +626,7 @@ system:
     bind_port: 2022
 remote: "${panel_url}"
 CONFEOF
-    print_success "Config written to /etc/pterodactyl/config.yml"
+    print_success "Config written → /etc/pterodactyl/config.yml"
     print_divider
 
     print_status "Starting Wings daemon"
@@ -570,11 +647,11 @@ CONFEOF
     echo -e "   ${BRIGHT_GREEN}║  ${BRIGHT_CYAN}${BD}  ${CHECKMARK}  WINGS CONFIGURED & STARTED!         ${BRIGHT_GREEN}   ║${NC}"
     echo -e "   ${BRIGHT_GREEN}╚══════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "   ${DARK_GRAY}  ┌─────────────────────────────────────────────────${NC}"
+    echo -e "   ${DARK_GRAY}  ┌──────────────────────────────────────────────────${NC}"
     echo -e "   ${DARK_GRAY}  │${NC}  ${YELLOW}1.${NC} Check status : ${BRIGHT_GREEN}sudo systemctl status wings${NC}"
     echo -e "   ${DARK_GRAY}  │${NC}  ${YELLOW}2.${NC} View logs    : ${BRIGHT_GREEN}sudo journalctl -u wings -f${NC}"
     echo -e "   ${DARK_GRAY}  │${NC}  ${YELLOW}3.${NC} Use helper   : ${BRIGHT_MAGENTA}wing${NC}"
-    echo -e "   ${DARK_GRAY}  └─────────────────────────────────────────────────${NC}"
+    echo -e "   ${DARK_GRAY}  └──────────────────────────────────────────────────${NC}"
     pause
 }
 
